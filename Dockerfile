@@ -42,4 +42,4 @@ RUN dpkg-buildpackage --no-sign
 
 WORKDIR /usr/src
 
-RUN lintian *deb
+RUN lintian --suppress-tags bad-whatis-entry *.changes
