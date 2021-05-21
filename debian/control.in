@@ -3,7 +3,7 @@ Section: database
 Priority: optional
 Maintainer: Dimitri Fontaine <dim@tapoueh.org>
 Uploaders: Christoph Berg <myon@debian.org>
-Build-Depends: debhelper (>= 12), flex, postgresql-server-dev-all (>= 158~), libedit-dev, libpam0g-dev, libreadline-dev, libselinux1-dev, libxslt1-dev
+Build-Depends: debhelper (>= 12), flex, postgresql-server-dev-all (>= 158~), libedit-dev, libpam0g-dev, libreadline-dev, libselinux1-dev, libxslt1-dev,         libssl-dev, libkrb5-dev, zlib1g-dev, python3-sphinx
 Standards-Version: 4.5.1
 Homepage: https://github.com/citusdata/pg_auto_failover
 

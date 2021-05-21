@@ -20,7 +20,7 @@ RUN apt-get update \
         libxslt1-dev \
         libssl-dev \
         libkrb5-dev \
-        libz-dev \
+        zlib1g-dev \
         postgresql-server-dev-all \
         postgresql-common \
         python3-sphinx \
