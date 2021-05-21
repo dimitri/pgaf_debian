@@ -1,0 +1,7 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: pg-auto-failover
+Source: https://github.com/citusdata/pg_auto_failover
+
+Files: *
+Copyright: Copyright (c) Microsoft Corporation. All rights reserved.
+License: PostgreSQL License
