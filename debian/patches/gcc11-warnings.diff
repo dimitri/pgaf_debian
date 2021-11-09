@@ -1,0 +1,22 @@
+diff --git a/src/bin/pg_autoctl/watch.c b/src/bin/pg_autoctl/watch.c
+index c24e77d7..59f6e9cd 100644
+--- a/src/bin/pg_autoctl/watch.c
++++ b/src/bin/pg_autoctl/watch.c
+@@ -670,7 +670,7 @@ print_watch_footer(WatchContext *context)
+ 
+ 	attron(A_STANDOUT);
+ 
+-	mvprintw(r, context->cols - strlen(help), help);
++	mvprintw(r, context->cols - strlen(help), "%s", help);
+ 
+ 	attroff(A_STANDOUT);
+ 
+@@ -1411,7 +1411,7 @@ print_event(WatchContext *context, EventColPolicy *policy, int index, int r, int
+ 		{
+ 			case EVENT_COLUMN_TYPE_ID:
+ 			{
+-				mvprintw(r, cc, "%*d", len, event->eventId);
++				mvprintw(r, cc, "%*lld", len, (long long) event->eventId);
+ 				break;
+ 			}
+ 
