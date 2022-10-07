@@ -2,22 +2,45 @@ Source: pg-auto-failover
 Section: database
 Priority: optional
 Maintainer: Dimitri Fontaine <dim@tapoueh.org>
-Uploaders: Christoph Berg <myon@debian.org>
-Build-Depends: debhelper (>= 12), flex, postgresql-server-dev-all (>= 158~), libedit-dev, libpam0g-dev, libreadline-dev, libselinux1-dev, libxslt1-dev, libssl-dev, libkrb5-dev, zlib1g-dev, python3-sphinx, liblz4-dev, libncurses-dev
+Uploaders:
+ Christoph Berg <myon@debian.org>,
+Build-Depends:
+ debhelper (>= 12),
+ flex,
+ libedit-dev,
+ libkrb5-dev,
+ liblz4-dev,
+ libncurses-dev,
+ libpam0g-dev,
+ libreadline-dev,
+ libselinux1-dev,
+ libssl-dev,
+ libxslt1-dev,
+ postgresql-server-dev-all (>= 158~),
+ python3-sphinx,
+ zlib1g-dev,
 Standards-Version: 4.5.1
 Homepage: https://github.com/citusdata/pg_auto_failover
 
 Package: pg-auto-failover-cli
 Architecture: any
-Depends: ${shlibs:Depends},${misc:Depends}, openssl
-Recommends: postgresql-10-auto-failover | postgresql-11-auto-failover | postgresql-12-auto-failover | postgresql-13-auto-failover | postgresql-14-auto-failover
+Depends:
+ openssl,
+ ${misc:Depends},
+ ${shlibs:Depends},
+Recommends:
+ postgresql-10-auto-failover | postgresql-11-auto-failover | postgresql-12-auto-failover | postgresql-13-auto-failover | postgresql-14-auto-failover,
 Description: Command line interface and service to manage pg auto failover Clusters
  This CLI is used to manage pg_auto_failover installations to provide High
  Availability to Postgres.
 
 Package: postgresql-PGVERSION-auto-failover
 Architecture: any
-Depends: ${shlibs:Depends},${misc:Depends}, postgresql-PGVERSION, pg-auto-failover-cli (= ${binary:Version})
+Depends:
+ pg-auto-failover-cli (= ${binary:Version}),
+ postgresql-PGVERSION,
+ ${misc:Depends},
+ ${shlibs:Depends},
 Description: Postgres high availability support
  This extension implements a set of functions to provide High Availability to
  Postgres.
