@@ -1,3 +1,9 @@
+pg-auto-failover (2.0-1) unstable; urgency=low
+
+  * Official 2.0 release of pg_auto_failover
+
+ -- Dimitri Fontaine <dim@tapoueh.org>  Fri, 07 Oct 2022 12:38:25 +0200
+
 pg-auto-failover (1.6.4-1) unstable; urgency=low
 
   * Official 1.6.4 release of pg_auto_failover
