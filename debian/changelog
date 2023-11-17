@@ -1,3 +1,9 @@
+pg-auto-failover (2.0-3) unstable; urgency=medium
+
+  * Upload for PostgreSQL 16.
+
+ -- Christoph Berg <myon@debian.org>  Fri, 17 Nov 2023 09:56:02 +0000
+
 pg-auto-failover (2.0-2) unstable; urgency=medium
 
   * Upload for PostgreSQL 15.

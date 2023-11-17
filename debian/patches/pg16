@@ -1,0 +1,307 @@
+--- a/.github/workflows/run-tests.yml
++++ b/.github/workflows/run-tests.yml
+@@ -23,6 +23,7 @@ jobs:
+           - 13
+           - 14
+           - 15
++          - 16
+         TEST:
+           - multi
+           - single
+--- a/Makefile
++++ b/Makefile
+@@ -248,6 +248,9 @@ build-test-pg15:
+
+ build-test-image: build-test-pg$(PGVERSION) ;
+
++build-test-pg16: version
++	docker build $(BUILD_ARGS_PG16) --target test -t $(TEST_CONTAINER_NAME):pg16 .
++
+
+ #
+ # make run-test; is the main testing entry point used to run tests inside
+@@ -279,10 +282,13 @@ build-pg14: build-test-pg14
+ build-pg15: build-test-pg15
+ 	docker build --build-arg PGVERSION=15 -t $(CONTAINER_NAME):pg15 .
+
+-build: build-pg11 build-pg12 build-pg13 build-pg14 build-pg15 ;
++build-pg16: build-test-pg16
++	docker build $(BUILD_ARGS_PG16) -t $(CONTAINER_NAME):pg16 .
++
++build: build-pg11 build-pg12 build-pg13 build-pg14 build-pg15 build-pg16 ;
+
+ build-check:
+-	for v in 11 12 13 14 15; do \
++	for v in 11 12 13 14 15 16; do \
+ 		docker run --rm -t pg_auto_failover_test:pg$$v pg_autoctl version --json | jq ".pg_version" | xargs echo $$v: ; \
+ 	done
+
+--- a/src/bin/lib/pg/snprintf.c
++++ b/src/bin/lib/pg/snprintf.c
+@@ -2,7 +2,7 @@
+  * Copyright (c) 1983, 1995, 1996 Eric P. Allman
+  * Copyright (c) 1988, 1993
+  *	The Regents of the University of California.  All rights reserved.
+- * Portions Copyright (c) 1996-2021, PostgreSQL Global Development Group
++ * Portions Copyright (c) 1996-2023, PostgreSQL Global Development Group
+  *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions
+@@ -739,12 +739,8 @@ find_arguments(const char *format, va_li
+ 	int			longflag;
+ 	int			fmtpos;
+ 	int			i;
+-	int			last_dollar;
+-	PrintfArgType argtypes[PG_NL_ARGMAX + 1];
+-
+-	/* Initialize to "no dollar arguments known" */
+-	last_dollar = 0;
+-	MemSet(argtypes, 0, sizeof(argtypes));
++	int			last_dollar = 0;	/* Init to "no dollar arguments known" */
++	PrintfArgType argtypes[PG_NL_ARGMAX + 1] = {0};
+
+ 	/*
+ 	 * This loop must accept the same format strings as the one in dopr().
+@@ -985,8 +981,8 @@ fmtptr(const void *value, PrintfTarget *
+ 	int			vallen;
+ 	char		convert[64];
+
+-	/* we rely on regular C library's sprintf to do the basic conversion */
+-	vallen = sprintf(convert, "%p", value);
++	/* we rely on regular C library's snprintf to do the basic conversion */
++	vallen = snprintf(convert, sizeof(convert), "%p", value);
+ 	if (vallen < 0)
+ 		target->failed = true;
+ 	else
+@@ -1136,11 +1132,11 @@ fmtfloat(double value, char type, int fo
+ 	int			padlen;			/* amount to pad with spaces */
+
+ 	/*
+-	 * We rely on the regular C library's sprintf to do the basic conversion,
++	 * We rely on the regular C library's snprintf to do the basic conversion,
+ 	 * then handle padding considerations here.
+ 	 *
+ 	 * The dynamic range of "double" is about 1E+-308 for IEEE math, and not
+-	 * too wildly more than that with other hardware.  In "f" format, sprintf
++	 * too wildly more than that with other hardware.  In "f" format, snprintf
+ 	 * could therefore generate at most 308 characters to the left of the
+ 	 * decimal point; while we need to allow the precision to get as high as
+ 	 * 308+17 to ensure that we don't truncate significant digits from very
+@@ -1192,14 +1188,14 @@ fmtfloat(double value, char type, int fo
+ 			fmt[2] = '*';
+ 			fmt[3] = type;
+ 			fmt[4] = '\0';
+-			vallen = sprintf(convert, fmt, prec, value);
++			vallen = snprintf(convert, sizeof(convert), fmt, prec, value);
+ 		}
+ 		else
+ 		{
+ 			fmt[0] = '%';
+ 			fmt[1] = type;
+ 			fmt[2] = '\0';
+-			vallen = sprintf(convert, fmt, value);
++			vallen = snprintf(convert, sizeof(convert), fmt, value);
+ 		}
+ 		if (vallen < 0)
+ 			goto fail;
+@@ -1328,7 +1324,7 @@ pg_strfromd(char *str, size_t count, int
+ 			fmt[2] = '*';
+ 			fmt[3] = 'g';
+ 			fmt[4] = '\0';
+-			vallen = sprintf(convert, fmt, precision, value);
++			vallen = snprintf(convert, sizeof(convert), fmt, precision, value);
+ 			if (vallen < 0)
+ 			{
+ 				target.failed = true;
+--- a/src/bin/pg_autoctl/azure.c
++++ b/src/bin/pg_autoctl/azure.c
+@@ -1585,9 +1585,9 @@ azure_fetch_resource_list(const char *gr
+ 			}
+ 			else if (streq(type, "Microsoft.Compute/virtualMachines"))
+ 			{
+-				int index = azure_node_index_from_name(group, name);
++				int idx = azure_node_index_from_name(group, name);
+
+-				strlcpy(azRegion->vmArray[index].name, name, NAMEDATALEN);
++				strlcpy(azRegion->vmArray[idx].name, name, NAMEDATALEN);
+
+ 				log_info("Found existing VM \"%s\"", name);
+ 			}
+--- a/src/bin/pg_autoctl/pgctl.c
++++ b/src/bin/pg_autoctl/pgctl.c
+@@ -1837,9 +1837,6 @@ pg_log_startup(const char *pgdata, int l
+ 		 */
+ 		if (pgLogFileMtime >= pgStartupMtime)
+ 		{
+-			char *fileContents;
+-			long fileSize;
+-
+ 			log_level(pathLogLevel,
+ 					  "Postgres logs from \"%s\":", pgLogFilePath);
+
+--- a/src/bin/pg_autoctl/pgsetup.c
++++ b/src/bin/pg_autoctl/pgsetup.c
+@@ -501,7 +501,7 @@ get_pgpid(PostgresSetup *pgSetup, bool p
+ 		}
+ 		else
+ 		{
+-			int logLevel = pgIsNotRunningIsOk ? LOG_DEBUG : LOG_WARN;
++			logLevel = pgIsNotRunningIsOk ? LOG_DEBUG : LOG_WARN;
+
+ 			log_level(logLevel,
+ 					  "Read a stale pid in \"postmaster.pid\": %d", pid);
+--- a/src/bin/pg_autoctl/primary_standby.c
++++ b/src/bin/pg_autoctl/primary_standby.c
+@@ -1239,7 +1239,7 @@ postgres_maybe_do_crash_recovery(LocalPo
+ 				 * Now stop Postgres by just killing our child process, and
+ 				 * wait until the child process has finished with waitpid().
+ 				 */
+-				int wpid, status;
++				int wpid;
+
+ 				do {
+ 					if (kill(fpid, SIGTERM) != 0)
+--- a/src/bin/pg_autoctl/watch.c
++++ b/src/bin/pg_autoctl/watch.c
+@@ -1430,7 +1430,7 @@ print_event(WatchContext *context, Event
+ 			case EVENT_COLUMN_TYPE_DESCRIPTION:
+ 			{
+ 				char *text = event->description;
+-				int len = strlen(text);
++				len = strlen(text);
+
+ 				/* when KEY_END is used, ensure we see the end of text */
+ 				if (context->move == WATCH_MOVE_FOCUS_END)
+--- a/src/monitor/group_state_machine.c
++++ b/src/monitor/group_state_machine.c
+@@ -2077,7 +2077,7 @@ WalDifferenceWithin(AutoFailoverNode *se
+ 		return false;
+ 	}
+
+-	int64 walDifference = Abs(otherNodeLsn - secondaryLsn);
++	int64 walDifference = labs((int64)otherNodeLsn - (int64)secondaryLsn);
+
+ 	return walDifference <= delta;
+ }
+--- a/src/monitor/health_check_worker.c
++++ b/src/monitor/health_check_worker.c
+@@ -37,7 +37,6 @@
+ #include "fmgr.h"
+ #include "lib/stringinfo.h"
+ #include "libpq-fe.h"
+-#include "libpq-int.h"
+ #include "libpq/pqsignal.h"
+ #include "poll.h"
+ #include "sys/time.h"
+@@ -58,8 +57,6 @@
+ 	"connect_timeout=%u"
+ #define MAX_CONN_INFO_SIZE 1024
+
+-#define CANNOT_CONNECT_NOW "57P03"
+-
+
+ typedef enum
+ {
+@@ -939,20 +936,9 @@ ManageHealthCheck(HealthCheck *healthChe
+ 				break;
+ 			}
+
+-			/* This logic is taken from libpq's internal_ping (fe-connect.c) */
+ 			pollingStatus = PQconnectPoll(connection);
+-			char *sqlstate = connection->last_sqlstate;
+-			bool receivedSqlstate = (sqlstate != NULL && strlen(sqlstate) == 5);
+-			bool cannotConnectNowSqlstate = (receivedSqlstate &&
+-											 strcmp(sqlstate, CANNOT_CONNECT_NOW) == 0);
+-
+-			if (pollingStatus == PGRES_POLLING_OK ||
+-
+-			    /* an auth request means pg is running */
+-				connection->auth_req_received ||
+
+-			    /* any error but CANNOT_CONNECT means the db is accepting connections */
+-				(receivedSqlstate && !cannotConnectNowSqlstate))
++			if (pollingStatus == PGRES_POLLING_OK)
+ 			{
+ 				PQfinish(connection);
+
+--- a/src/monitor/node_active_protocol.c
++++ b/src/monitor/node_active_protocol.c
+@@ -867,7 +867,7 @@ get_nodes(PG_FUNCTION_ARGS)
+ 		/* prepare next SRF call */
+ 		fctx->nodesList = list_delete_first(fctx->nodesList);
+
+-		SRF_RETURN_NEXT(funcctx, PointerGetDatum(resultDatum));
++		SRF_RETURN_NEXT(funcctx, resultDatum);
+ 	}
+
+ 	SRF_RETURN_DONE(funcctx);
+@@ -995,7 +995,7 @@ get_other_nodes(PG_FUNCTION_ARGS)
+ 		/* prepare next SRF call */
+ 		fctx->nodesList = list_delete_first(fctx->nodesList);
+
+-		SRF_RETURN_NEXT(funcctx, PointerGetDatum(resultDatum));
++		SRF_RETURN_NEXT(funcctx, resultDatum);
+ 	}
+
+ 	SRF_RETURN_DONE(funcctx);
+@@ -1132,7 +1132,6 @@ RemoveNode(AutoFailoverNode *currentNode
+ 	{
+ 		foreach(nodeCell, otherNodesGroupList)
+ 		{
+-			char message[BUFSIZE] = { 0 };
+ 			AutoFailoverNode *node = (AutoFailoverNode *) lfirst(nodeCell);
+
+ 			if (node == NULL)
+@@ -1712,7 +1711,6 @@ start_maintenance(PG_FUNCTION_ARGS)
+ 	{
+ 		List *standbyNodesGroupList = AutoFailoverOtherNodesList(currentNode);
+ 		AutoFailoverNode *firstStandbyNode = linitial(standbyNodesGroupList);
+-		char message[BUFSIZE] = { 0 };
+
+ 		/*
+ 		 * We need at least one candidate node to initiate a failover and allow
+--- a/src/monitor/node_metadata.c
++++ b/src/monitor/node_metadata.c
+@@ -1255,9 +1255,9 @@ AddAutoFailoverNode(char *formationId,
+ 			" max(nodeid)+1) "
+ 			" FROM " AUTO_FAILOVER_NODE_TABLE;
+
+-		int spiStatus = SPI_execute_with_args(setValQuery,
+-											  0, NULL, NULL, NULL,
+-											  false, 0);
++		spiStatus = SPI_execute_with_args(setValQuery,
++										  0, NULL, NULL, NULL,
++										  false, 0);
+
+ 		if (spiStatus != SPI_OK_SELECT)
+ 		{
+--- a/src/monitor/pg_auto_failover.c
++++ b/src/monitor/pg_auto_failover.c
+@@ -124,12 +124,14 @@ StartMonitorNode(void)
+ 	DefineCustomBoolVariable("pgautofailover.enable_version_checks",
+ 							 "Enable extension version compatibility checks",
+ 							 NULL, &EnableVersionChecks, true, PGC_SIGHUP,
+-							 GUC_NO_SHOW_ALL, NULL, NULL, NULL);
++							 GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE,
++							 NULL, NULL, NULL);
+
+ 	DefineCustomBoolVariable("pgautofailover.enable_health_checks",
+ 							 "Enable background health checks",
+ 							 NULL, &HealthChecksEnabled, true, PGC_SIGHUP,
+-							 GUC_NO_SHOW_ALL, NULL, NULL, NULL);
++							 GUC_NO_SHOW_ALL | GUC_NOT_IN_SAMPLE,
++							 NULL, NULL, NULL);
+
+ 	DefineCustomIntVariable("pgautofailover.health_check_period",
+ 							"Duration between each check (in milliseconds).",
+--- a/src/monitor/version_compat.h
++++ b/src/monitor/version_compat.h
+@@ -15,7 +15,7 @@
+ #include "postgres.h"
+
+ /* we support Postgres versions 10, 11, 12, 13, and 14. And 15devel. */
+-#if (PG_VERSION_NUM < 100000 || PG_VERSION_NUM >= 160000)
++#if (PG_VERSION_NUM < 100000)
+ #error "Unknown or unsupported postgresql version"
+ #endif
+
