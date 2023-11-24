@@ -1,1 +1,2 @@
 docs/_build/
+src/bin/pg_autoctl/git-version.h

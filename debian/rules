@@ -2,12 +2,14 @@
 
 CLINAME := $(lastword $(shell grep "Package: pg-auto-failover-cli" debian/control))
 
+include /usr/share/dpkg/pkg-info.mk
 include /usr/share/postgresql-common/pgxs_debian_control.mk
 clean: debian/control
 
 .PHONY: debian/control
 
 override_dh_auto_build:
+	echo "#define GIT_VERSION \"$(DEB_VERSION)\"" > src/bin/pg_autoctl/git-version.h
 	+make -C $(shell pwd)/src/bin/pg_autoctl
 	+pg_buildext build $(shell pwd)/src/monitor build-%v
 	+make man
