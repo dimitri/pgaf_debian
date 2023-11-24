@@ -2,6 +2,7 @@ pg-auto-failover (2.1-1) unstable; urgency=medium
 
   * New upstream version 2.1.
   * debian/rules: Generate src/bin/pg_autoctl/git-version.h.
+  * debian/pgversions: Bump to 11+.
 
  -- Christoph Berg <myon@debian.org>  Fri, 24 Nov 2023 16:35:57 +0000
 
