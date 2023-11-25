@@ -1,3 +1,10 @@
+pg-auto-failover (2.1-2) unstable; urgency=medium
+
+  * Relax dependency on pg-auto-failover-cli to >= so we can stop building
+    packages for older PG versions without making them uninstallable.
+
+ -- Christoph Berg <myon@debian.org>  Sat, 25 Nov 2023 09:52:08 +0000
+
 pg-auto-failover (2.1-1) unstable; urgency=medium
 
   * New upstream version 2.1.
