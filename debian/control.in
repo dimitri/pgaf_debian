@@ -5,6 +5,7 @@ Maintainer: Dimitri Fontaine <dim@tapoueh.org>
 Uploaders:
  Christoph Berg <myon@debian.org>,
 Build-Depends:
+ architecture-is-64-bit <!pkg.postgresql.32-bit>,
  debhelper-compat (= 13),
  flex,
  libedit-dev,
@@ -20,7 +21,7 @@ Build-Depends:
  postgresql-server-dev-all (>= 158~),
  python3-sphinx,
  zlib1g-dev,
-Standards-Version: 4.6.1
+Standards-Version: 4.7.0
 Rules-Requires-Root: no
 Homepage: https://github.com/citusdata/pg_auto_failover
 
@@ -40,7 +41,7 @@ Package: postgresql-PGVERSION-auto-failover
 Architecture: any
 Depends:
  pg-auto-failover-cli (>= ${binary:Version}),
- postgresql-PGVERSION,
+ ${postgresql:Depends},
  ${misc:Depends},
  ${shlibs:Depends},
 Description: Postgres high availability support

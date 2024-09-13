@@ -1,0 +1,14 @@
+--- a/src/monitor/version_compat.h
++++ b/src/monitor/version_compat.h
+@@ -14,11 +14,6 @@
+ 
+ #include "postgres.h"
+ 
+-/* we support Postgres versions 10, 11, 12, 13, 14, 15, and 16. */
+-#if (PG_VERSION_NUM < 100000 || PG_VERSION_NUM >= 170000)
+-#error "Unknown or unsupported postgresql version"
+-#endif
+-
+ #if (PG_VERSION_NUM < 110000)
+ 
+ #include "postmaster/bgworker.h"
