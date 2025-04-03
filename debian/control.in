@@ -24,6 +24,8 @@ Build-Depends:
 Standards-Version: 4.7.0
 Rules-Requires-Root: no
 Homepage: https://github.com/citusdata/pg_auto_failover
+Vcs-Browser: https://salsa.debian.org/postgresql/pg-auto-failover
+Vcs-Git: https://salsa.debian.org/postgresql/pg-auto-failover.git
 
 Package: pg-auto-failover-cli
 Architecture: any
